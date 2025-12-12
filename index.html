@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ERDojo Announce Generator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+</head>
+<body class="container py-4">
+  <h1 class="mb-4">ERDojo Announce Generator</h1>
+
+  <!-- メンション先 -->
+  <div class="mb-3">
+    <label class="form-label">メンション先</label>
+    <select id="groups" class="form-select">
+      <option value="<@&1393437482313453639>">Scrim Group A</option>
+      <option value="<@&1393442367520112772>">Scrim Group B</option>
+      <option value="<@&1417520610275229817>">Scrim Group C</option>
+    </select>
+  </div>
+
+  <!-- Round〜Main Weather を1列でまとめる -->
+  <div class="row g-3 mb-3">
+    <div class="col-md">
+      <label class="form-label">Round</label>
+      <input id="round" type="number" class="form-control" />
+    </div>
+
+    <div class="col-md">
+      <label class="form-label">Room Code</label>
+      <input id="room" type="number" class="form-control" />
+    </div>
+
+    <div class="col-md">
+      <label class="form-label">Start (JST)</label>
+      <input id="start" type="time" class="form-control" />
+    </div>
+
+    <div class="col-md">
+      <label class="form-label">Main Weather</label>
+      <select id="weather" class="form-select">
+        <option value="曇り / Clowdy ">曇り</option>
+        <option value="晴れ / Sunny ">晴れ</option>
+        <option value="雨 / Rainy ">雨</option>
+        <option value="砂嵐 / Sandstorm">砂嵐</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- BAN -->
+  <div class="mb-3">
+    <label class="form-label">Character BAN</label>
+
+    <div class="accordion mb-3" id="banAccordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="banHeader">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#banCollapse">
+            キャラクター一覧（クリックで展開）
+          </button>
+        </h2>
+        <div id="banCollapse" class="accordion-collapse collapse" data-bs-parent="#banAccordion">
+          <div class="accordion-body">
+            <div id="ban-list" class="row row-cols-2 row-cols-md-3 g-2">
+              <!-- JSON読み込み後に自動生成 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option -->
+  <div class="form-check mb-3">
+    <input id="opt" class="form-check-input" type="checkbox" />
+    <label class="form-check-label">メンバー入れ替え可能ラウンド</label>
+  </div>
+
+  <button onclick="generateText()" class="btn btn-primary mb-3">生成</button>
+
+  <textarea id="output" class="form-control" rows="10" placeholder="ここに生成結果が表示されます"></textarea>
+
+<script>
+async function loadCharacters() {
+  const res = await fetch("characterlist.json");
+  const chars = await res.json();
+  chars.sort((a, b) => a.localeCompare(b));
+
+  const container = document.getElementById("ban-list");
+  container.innerHTML = "";
+
+  chars.forEach(name => {
+    const div = document.createElement("div");
+    div.className = "col";
+    div.innerHTML = `
+      <label class="form-check">
+        <input class="form-check-input" type="checkbox" value="${name}">
+        <span class="form-check-label">${name}</span>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.addEventListener("DOMContentLoaded", loadCharacters);
+
+function generateText() {
+  const groups = document.getElementById('groups').value;
+  const round = document.getElementById('round').value;
+  const room = document.getElementById('room').value;
+  const start = document.getElementById('start').value;
+  const weather = document.getElementById('weather').value;
+
+  const banBoxes = document.querySelectorAll('#ban-list input[type=checkbox]');
+  const bans = Array.from(banBoxes).filter(b => b.checked).map(b => b.value);
+  const banText = bans.length > 0 ? bans.join(', ') : 'なし';
+
+  const opt = document.getElementById('opt').checked;
+  const optText = opt ? '\nメンバーの入れ替えが1名まで可能です。\nThis round allows up to one member substitution.' : '';
+
+  const result = `${groups}\n\`\`\`
+Round ${round}
+Room Code     : ${room}
+Start(JST)    : ${start}
+Main Weather  : ${weather}
+Character BAN : ${banText}
+
+ロビーへの入場をお願いいたします。
+Please enter the lobby.${optText}
+\`\`\``;
+
+  document.getElementById('output').value = result;
+}
+</script>
+</body>
+</html>
